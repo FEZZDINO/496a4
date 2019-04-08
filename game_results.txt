@@ -1,5 +1,5 @@
 player 1: a3_ver/Gomoku3.py
 player 2: random_player/Gomoku2.py
-player 1 wins 5
-player 2 wins 4
-draw 1
+player 1 wins 4
+player 2 wins 6
+draw 0
