@@ -11,6 +11,10 @@ from board_util import GoBoardUtil, BLACK, WHITE, EMPTY, BORDER, PASS, \
                        MAXSIZE, coord_to_point
 import numpy as np
 import re
+import sys
+import os
+import time
+import copy
 class GtpConnection():
 
     def __init__(self, go_engine, board, debug_mode = False):
@@ -26,6 +30,7 @@ class GtpConnection():
         self._debug_mode = debug_mode
         self.go_engine = go_engine
         self.board = board
+        self.timelimit = 58
         self.policytype="rule_based"
         self.commands = {
             "protocol_version": self.protocol_version_cmd,
@@ -253,6 +258,8 @@ class GtpConnection():
         board_color = args[0].lower()
         color = color_to_int(board_color)
         game_end, winner = self.board.check_game_end_gomoku()
+        self.start_time = time.time()
+
         if game_end:
             if winner == color:
                 self.respond("pass")
@@ -284,6 +291,9 @@ class GtpConnection():
 
                 for _ in range(10):
                     result = self.rules(self.board, color,  GoBoardUtil.opponent(color))
+                    if result == "out":
+                        self.random(self.board, color, color)
+                        return 
                     gmax += result
                     #print(wins)
 
@@ -583,6 +593,8 @@ class GtpConnection():
 
 
         game_end, win = self.board.check_game_end_gomoku()#check if the game ends or not
+        if (time.time() - self.start_time) > self.timelimit-0.01:
+            return "out"
         if game_end:
             if win == original:
                 return 1
