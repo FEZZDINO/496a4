@@ -1,0 +1,10 @@
+policy rule_based
+clear_board
+boardsize 8
+play B D2
+play W A2
+play B D4
+play W A3
+play B D5
+showboard
+policy_moves
