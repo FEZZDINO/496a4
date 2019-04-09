@@ -281,9 +281,13 @@ class GtpConnection():
                     best = i
                     cur_max = (gmax/10)
         elif (self.policytype == "rule_based"):
-
-            if len(GoBoardUtil.generate_current_color(self.board, color)) <= 16: #how many moves we have played
-                self.respond(format_point(self.firstsixteen(color)))
+            print(len(GoBoardUtil.generate_current_color(self.board, color)))
+            if len(GoBoardUtil.generate_current_color(self.board, color)) <= 3: #how many moves we have played
+                best = self.firstsixteen(color)
+                move_coord = point_to_coord(best, self.board.size)
+                move_as_string = format_point(move_coord)
+                self.board.play_move_gomoku(best, color)
+                self.respond(move_as_string)
                 return 
             best = None
             cur_max = 0
@@ -295,9 +299,6 @@ class GtpConnection():
 
                 for _ in range(10):
                     result = self.rules(self.board, color,  GoBoardUtil.opponent(color))
-                    if result == "out":
-                        self.random(self.board, color, color)
-                        return 
                     gmax += result
                     #print(wins)
 
@@ -606,7 +607,9 @@ class GtpConnection():
             moves = GoBoardUtil.generate_legal_moves_gomoku(self.board)
             cur = GoBoardUtil.generate_current_color(self.board, color)
             if len(cur) == 0: #first step to go 
-                return GoBoardUtil.generate_random_move_gomoku(self.board)
+                move = GoBoardUtil.generate_random_move_gomoku(self.board)
+                #print(type(move))
+                return int(move)
             seikiro = [] #a list for ranking of best points
             for i in moves:
                 length, point= self.findlongestsequence(i, cur)
@@ -659,7 +662,7 @@ class GtpConnection():
 
         if max(c_list)!=0:
             best = target[c_list.index(max(c_list))].item()
-            return max_c_list, best
+            return max(c_list), best
         return False, False
 
 
