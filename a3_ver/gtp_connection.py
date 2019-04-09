@@ -30,7 +30,7 @@ class GtpConnection():
         self._debug_mode = debug_mode
         self.go_engine = go_engine
         self.board = board
-        self.timelimit = 58
+        self.timelimit = 55
         self.policytype="rule_based"
         self.commands = {
             "protocol_version": self.protocol_version_cmd,
@@ -298,9 +298,15 @@ class GtpConnection():
                 self.board.play_move_gomoku(i, color)
 
                 for _ in range(10):
+                    
                     result = self.rules(self.board, color,  GoBoardUtil.opponent(color))
-                    gmax += result
-                    #print(wins)
+                    if result == "out":
+                        self.board.reset_point_gomoku(i, color)
+                        break
+                    else:
+
+                        gmax += result
+                        #print(wins)
 
                 if (gmax/10) > cur_max:
                     best = i
