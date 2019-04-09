@@ -281,6 +281,10 @@ class GtpConnection():
                     best = i
                     cur_max = (gmax/10)
         elif (self.policytype == "rule_based"):
+
+            if len(GoBoardUtil.generate_current_color(self.board, color)) <= 16: #how many moves we have played
+                self.respond(format_point(self.firstsixteen(color)))
+                return 
             best = None
             cur_max = 0
             for i in move:
@@ -517,12 +521,8 @@ class GtpConnection():
         opp = GoBoardUtil.opponent(color)
         result = self.OpenFour_my(opp)
         if result:
-            if len(result) == 1:
-                for node in legal_moves:
-                    check_3_connect(point)
-                
-            else:
-                return result
+
+            return result
         return False
 
     def policy_cmd(self, args):
@@ -587,6 +587,81 @@ class GtpConnection():
 
         self.board.reset_point_gomoku(move, color)
         return status
+    def firstsixteen(self, color):
+        game_end, win = self.board.check_game_end_gomoku()
+        checkpoint = "killer mode"
+        if self.Win(color):
+            checkpoint = "Win"
+            moves = self.Win(color)
+        elif self.BlockWin():
+            checkpoint = "BlockWin"
+            moves =self.BlockWin()
+        elif self.OpenFour(color):
+            checkpoint = "OpenFour"
+            moves =self.OpenFour(color)
+        elif self.BlockOpenFour(color):
+            checkpoint = "BlockOpenFour"
+            moves =self.BlockOpenFour(color)
+        else:
+            moves = GoBoardUtil.generate_legal_moves_gomoku(self.board)
+            cur = GoBoardUtil.generate_current_color(self.board, color)
+            if len(cur) == 0: #first step to go 
+                return GoBoardUtil.generate_random_move_gomoku(self.board)
+            seikiro = [] #a list for ranking of best points
+            for i in moves:
+                length, point= self.findlongestsequence(i, cur)
+                if length != False:
+                    seikiro.append([length,point])
+            sorted(seikiro, key=lambda x: x[0], reverse=True)
+            return seikiro[0][1] #return the best point 
+
+
+        
+        return moves[0] #return 
+
+    def findlongestsequence(self, cur, list1): #return the point with its correspoind length in board 
+        c_list = [0,0,0,0,0,0,0,0]#right,down,rightdown,leftdown,left,up,rightup,leftup
+        size = self.board.size+1
+        target = [0,0,0,0,0,0,0,0]
+        for i in range(5):
+            if (cur + i) in list1:
+                c_list[0] +=1
+            else:
+                target[0] = cur + i
+            if (cur + size*i ) in list1:
+                c_list[1] +=1
+            else:
+                target[1] = cur + size*i
+            if (cur + (size*i)+i) in list1:
+                c_list[2] +=1
+            else:
+                target[2] = cur + (size*i)+i
+            if (cur + size*i -i) in list1:
+                c_list[3] +=1
+            else:
+                target[3] = cur + size*i -i
+            if (cur - i) in list1:
+                c_list[4] +=1
+            else:
+                target[4] = cur - i
+            if (cur - size*i) in list1:
+                c_list[5] +=1
+            else:
+                target[5] = cur - size*i
+            if (cur - (size*i)+i) in list1:
+                c_list[6] +=1
+            else:
+                target[6] = cur - (size*i)+i
+            if (cur - size*i -i) in list1:
+                c_list[7] +=1
+            else:
+                target[7] = cur - size*i -i
+
+        if max(c_list)!=0:
+            best = target[c_list.index(max(c_list))].item()
+            return max_c_list, best
+        return False, False
+
 
 
     def rules(self,board, original, color):
