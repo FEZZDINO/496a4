@@ -282,7 +282,7 @@ class GtpConnection():
                     cur_max = (gmax/10)
         elif (self.policytype == "rule_based"):
             print(len(GoBoardUtil.generate_current_color(self.board, color)))
-            if len(GoBoardUtil.generate_current_color(self.board, color)) <= 3: #how many moves we have played
+            if len(GoBoardUtil.generate_current_color(self.board, color)) <= 2: #how many moves we have played
                 best = self.firstsixteen(color)
                 move_coord = point_to_coord(best, self.board.size)
                 move_as_string = format_point(move_coord)
