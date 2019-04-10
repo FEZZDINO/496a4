@@ -4,7 +4,6 @@ Utility functions for Go board.
 """
 
 import numpy as np
-from random import shuffle
 
 """
 Encoding of colors on and off a Go board.
@@ -91,13 +90,12 @@ def coord_to_point(row, col, boardsize):
     return NS * row + col
 
 class GoBoardUtil(object):
-    
+
     @staticmethod
     def generate_legal_moves(board, color):
         """
         generate a list of all legal moves on the board.
         Does not include the Pass move.
-
         Arguments
         ---------
         board : np.array
@@ -111,7 +109,7 @@ class GoBoardUtil(object):
             if board.is_legal(move, color):
                 legal_moves.append(move)
         return legal_moves
-    
+
     @staticmethod
     def generate_legal_moves_gomoku(board):
         """
@@ -122,9 +120,15 @@ class GoBoardUtil(object):
         legal_moves = []
         for move in moves:
             legal_moves.append(move)
-        shuffle(legal_moves)
         return legal_moves
-            
+    
+    @staticmethod
+    def generate_current_color(board, color):
+        moves = board.get_color_points(color)
+        legal_moves = []
+        for move in moves:
+            legal_moves.append(move)
+        return legal_moves
     @staticmethod
     def generate_random_move_gomoku(board):
         """
@@ -136,12 +140,11 @@ class GoBoardUtil(object):
         np.random.shuffle(moves)
         return moves[0]
 
-    @staticmethod       
+    @staticmethod
     def generate_random_move(board, color, use_eye_filter):
         """
         Generate a random move.
         Return PASS if no move found
-
         Arguments
         ---------
         board : np.array
@@ -160,7 +163,7 @@ class GoBoardUtil(object):
 
     @staticmethod
     def opponent(color):
-        return WHITE + BLACK - color    
+        return WHITE + BLACK - color
 
     @staticmethod
     def get_twoD_board(goboard):

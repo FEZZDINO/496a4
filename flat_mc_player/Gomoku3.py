@@ -33,7 +33,7 @@ class GomokuSimulationPlayer(object):
     then select the one with best win-rate.
     playout could be either random or rule_based (i.e., uses pre-defined patterns) 
     """
-    def __init__(self, n_simualtions_per_move=10, playout_policy='random', board_size=7):
+    def __init__(self, n_simualtions_per_move=10, playout_policy='rule_based', board_size=7):
         assert(playout_policy in ['random', 'rule_based'])
         self.n_simualtions_per_move=n_simualtions_per_move
         self.board_size=board_size
@@ -46,7 +46,7 @@ class GomokuSimulationPlayer(object):
         self.version = 3.0
         self.best_move=None
     
-    def set_playout_policy(self, playout_policy='random'):
+    def set_playout_policy(self, playout_policy='rule_based'):
         assert(playout_policy in ['random', 'rule_based'])
         self.playout_policy=playout_policy
 

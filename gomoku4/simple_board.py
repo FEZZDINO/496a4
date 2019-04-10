@@ -1,11 +1,9 @@
 """
 simple_board.py
-
 Implements a basic Go board with functions to:
 - initialize to a given board size
 - check if a move is legal
 - play a move
-
 The board uses a 1-dimensional representation with padding
 """
 
@@ -13,7 +11,6 @@ import numpy as np
 from board_util import GoBoardUtil, BLACK, WHITE, EMPTY, BORDER, \
                        PASS, is_black_white, coord_to_point, where1d, \
                        MAXSIZE, NULLPOINT
-import alphabeta
 
 class SimpleGoBoard(object):
 
@@ -35,7 +32,7 @@ class SimpleGoBoard(object):
             return False
         if point == self.ko_recapture:
             return False
-            
+
         # General case: detect captures, suicide
         opp_color = GoBoardUtil.opponent(color)
         self.board[point] = color
@@ -63,6 +60,8 @@ class SimpleGoBoard(object):
             The empty points on the board
         """
         return where1d(self.board == EMPTY)
+    def get_color_points(self, color):
+        return where1d(self.board == color)
 
     def __init__(self, size):
         """
@@ -102,7 +101,7 @@ class SimpleGoBoard(object):
         assert row >= 1
         assert row <= self.size
         return row * self.NS + 1
-        
+
     def _initialize_empty_points(self, board):
         """
         Fills points on the board with EMPTY
@@ -120,7 +119,7 @@ class SimpleGoBoard(object):
             if self.board[nb] != BORDER:
                 nbs.append(nb)
         return nbs
-            
+
     def _initialize_neighbors(self):
         """
         precompute neighbor array.
@@ -132,7 +131,7 @@ class SimpleGoBoard(object):
                 self.neighbors.append([])
             else:
                 self.neighbors.append(self._on_board_neighbors(point))
-        
+
     def is_eye(self, point, color):
         """
         Check if point is a simple eye for color
@@ -149,7 +148,7 @@ class SimpleGoBoard(object):
             elif self.board[d] == opp_color:
                 false_count += 1
         return false_count <= 1 - at_edge # 0 at edge, 1 in center
-    
+
     def _is_surrounded(self, point, color):
         """
         check whether empty point is surrounded by stones of color.
@@ -194,7 +193,7 @@ class SimpleGoBoard(object):
         """
         Find the block of given stone
         Returns a board of boolean markers which are set for
-        all the points in the block 
+        all the points in the block
         """
         marker = np.full(self.maxpoint, False, dtype = bool)
         pointstack = [stone]
@@ -213,11 +212,11 @@ class SimpleGoBoard(object):
     def _fast_liberty_check(self, nb_point):
         lib = self.liberty_of[nb_point]
         if lib != NULLPOINT and self.get_color(lib) == EMPTY:
-            return True # quick exit, block has a liberty  
+            return True # quick exit, block has a liberty
         if self._stone_has_liberty(nb_point):
             return True # quick exit, no need to look at whole block
         return False
-        
+
     def _detect_capture(self, nb_point):
         """
         Check whether opponent block on nb_point is captured.
@@ -227,7 +226,7 @@ class SimpleGoBoard(object):
             return False
         opp_block = self._block_of(nb_point)
         return not self._has_liberty(opp_block)
-    
+
     def _detect_and_process_capture(self, nb_point):
         """
         Check whether opponent block on nb_point is captured.
@@ -244,7 +243,7 @@ class SimpleGoBoard(object):
         captures = list(where1d(opp_block))
         self.board[captures] = EMPTY
         self.liberty_of[captures] = NULLPOINT
-        single_capture = None 
+        single_capture = None
         if len(captures) == 1:
             single_capture = nb_point
         return single_capture
@@ -264,7 +263,7 @@ class SimpleGoBoard(object):
             return False
         if point == self.ko_recapture:
             return False
-            
+
         # General case: deal with captures, suicide, and next ko point
         opp_color = GoBoardUtil.opponent(color)
         in_enemy_eye = self._is_surrounded(point, opp_color)
@@ -295,33 +294,31 @@ class SimpleGoBoard(object):
             if self.get_color(nb) == color:
                 nbc.append(nb)
         return nbc
-        
+
     def find_neighbor_of_color(self, point, color):
         """ Return one neighbor of point of given color, or None """
         for nb in self.neighbors[point]:
             if self.get_color(nb) == color:
                 return nb
         return None
-        
+
     def _neighbors(self, point):
         """ List of all four neighbors of the point """
         return [point - 1, point + 1, point - self.NS, point + self.NS]
 
     def _diag_neighbors(self, point):
         """ List of all four diagonal neighbors of point """
-        return [point - self.NS - 1, 
-                point - self.NS + 1, 
-                point + self.NS - 1, 
+        return [point - self.NS - 1,
+                point - self.NS + 1,
+                point + self.NS - 1,
                 point + self.NS + 1]
-    
+
     def _point_to_coord(self, point):
         """
         Transform point index to row, col.
-        
         Arguments
         ---------
         point
-        
         Returns
         -------
         x , y : int
@@ -337,7 +334,7 @@ class SimpleGoBoard(object):
             Check whether it is legal for color to play on point, for the game of gomoku
             """
         return self.board[point] == EMPTY
-    
+
     def play_move_gomoku(self, point, color):
         """
             Play a move of color on point, for the game of gomoku
@@ -350,7 +347,12 @@ class SimpleGoBoard(object):
         self.board[point] = color
         self.current_player = GoBoardUtil.opponent(color)
         return True
-        
+
+    def reset_point_gomoku(self, point, color):
+        assert point != PASS
+        self.board[point] = EMPTY
+        self.current_player = GoBoardUtil.opponent(color)
+
     def _point_direction_check_connect_gomoko(self, point, shift):
         """
         Check if the point has connect5 condition in a direction
@@ -380,7 +382,44 @@ class SimpleGoBoard(object):
                 break
         assert count <= 5
         return count == 5
-    
+
+
+
+    def _point_direction_check_connect_gomoko_3(self, point, shift):
+        """
+        Check if the point has connect 3 condition in a direction
+        for the game of Gomoko.
+        """
+        color = self.board[point]
+        count = 1
+        d = shift
+        p = point
+        while True:
+            p = p + d
+            if self.board[p] == color:
+                count = count + 1
+                if count == 3:
+                    break
+            else:
+                break
+        d = -d
+        p = point
+        while True:
+            p = p + d
+            if self.board[p] == color:
+                count = count + 1
+                if count == 3:
+                    break
+            else:
+                break
+        assert count <= 3
+        return count == 3
+
+
+
+
+
+
     def point_check_game_end_gomoku(self, point):
         """
             Check if the point causes the game end for the game of Gomoko.
@@ -388,138 +427,404 @@ class SimpleGoBoard(object):
         # check horizontal
         if self._point_direction_check_connect_gomoko(point, 1):
             return True
-        
+
         # check vertical
         if self._point_direction_check_connect_gomoko(point, self.NS):
             return True
-        
+
         # check y=x
         if self._point_direction_check_connect_gomoko(point, self.NS + 1):
             return True
-        
+
         # check y=-x
         if self._point_direction_check_connect_gomoko(point, self.NS - 1):
             return True
-        
+
         return False
-    
+
     def check_game_end_gomoku(self):
         """
             Check if the game ends for the game of Gomoku.
             """
         white_points = where1d(self.board == WHITE)
         black_points = where1d(self.board == BLACK)
-        
+
         for point in white_points:
             if self.point_check_game_end_gomoku(point):
                 return True, WHITE
-    
+
         for point in black_points:
             if self.point_check_game_end_gomoku(point):
                 return True, BLACK
 
         return False, None
 
-    def solve(self):
-        result, move, drawMove = alphabeta.solve(self)
-        if move=="First":
-            if result==0:
-                return 'draw',drawMove
+    def check_win_in_two_for_a_node(self, point, color):
+        """
+            Check if the point causes the game end for the game of Gomoko.
+            """
+        # check horizontal
+        rtv = self._point_direction_check_win_win_two_gomoko(point, 1, color)
+        # print("1: ", rtv)
+        # check vertical
+        rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS, color)
+        # print("self.NS: ", rtv)
+        # check y=x
+        rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS + 1, color)
+        # print("self.NS + 1: ", rtv)
+        # check y=-x
+        rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS - 1, color)
+        # print("self.NS - 1: ", rtv)
+        if len(rtv) > 0:
+            return rtv
+        else:
+
+            rtv = self._point_direction_check_another_win_two_gomoko(point, 1, color)
+            # print("1: ", rtv)
+            # check vertical
+            rtv += self._point_direction_check_another_win_two_gomoko(point, self.NS, color)
+            # print("self.NS: ", rtv)
+            # check y=x
+            rtv += self._point_direction_check_another_win_two_gomoko(point, self.NS + 1, color)
+            # print("self.NS + 1: ", rtv)
+            # check y=-x
+            rtv += self._point_direction_check_another_win_two_gomoko(point, self.NS - 1, color)
+            if len(rtv) > 0:
+                return rtv
             else:
-                winner='w' if self.current_player!=WHITE else 'b'
-                return winner,'NoMove'
-        elif move=="NoMove":
-            if result:
-                return 'draw', drawMove
+                return None
+
+
+    def _point_direction_check_another_win_two_gomoko(self, point, shift, color):
+
+        """ *x*xx* """
+        rt_list = []
+        struct = [EMPTY, color, color, EMPTY]
+        first = None
+        second = None
+        to_add = False
+
+        d1 = shift
+        p1 = point
+        d2 = -shift
+        p2 = point
+
+        for i in range(4):
+            p1 += d1
+            if self.board[p1] == struct[i]:
+                if first == None:
+                    first = p1
+                if i == 3:
+                    to_add = True
             else:
-                winner='w' if self.current_player!=WHITE else 'b'
-                return winner, move
-        else:
-            winner='w' if self.current_player==WHITE else 'b'
-            return winner, move
-
-    def check_pattern(self,point,have,direction_x,direction_y,moveSet,patternList,color,flag):
-        for i in range(0,4):
-            if have in patternList[i]:
-                for dis in patternList[i][have]:
-                    moveSet[i].add(point-direction_x*(dis+1)-direction_y*self.NS*(dis+1))
-                #flag[0]=True
                 break
-        if (not (0<= point<len(self.board))) or len(have)==9:
-            return
-#if self.get_color(point)==BORDER or len(have)==7:
-#            return
-        piece=self.get_color(point)
-        if piece==EMPTY:
-            piece='.'
-        elif piece==color:
-            piece='x'
-        elif piece == BORDER:
-            piece='B'
-        else:
-            piece='o'
-        have+=piece
-        #print(GoBoardUtil.format_point(self._point_to_coord(point)),have,self.board[point])
-        self.check_pattern(point+direction_x+direction_y*self.NS,have,direction_x,direction_y,moveSet,patternList,color,flag)
+        if to_add:
+            if self.board[(point + d2)] == EMPTY:
+                rt_list.append(first)
+            to_add = False
 
-    def get_pattern_moves(self):
-        """
-        1. direct winning point xxxx. x.xxx xx.xx
-        2. urgent blocking point xoooo.
-        3. wining in 2 step point
-        """
-        moveSet=[set(),set(),set(),set()]
-        color=self.current_player
-
-        patternList=[{'xxxx.':{0},'xxx.x':{1},'xx.xx':{2},'x.xxx':{3},'.xxxx':{4}}, #win
-                     {'oooo.':{0},'ooo.o':{1},'oo.oo':{2},'o.ooo':{3},'.oooo':{4}}, #block win
-                     {'.xxx..':{1},'..xxx.':{4},'.xx.x.':{2},'.x.xx.':{3}}, #make-four
-                     {'.ooo..':{1,5},'..ooo.':{0,4},'.oo.o.':{0,2,5},'.o.oo.':{0,3,5}, 'B.ooo..':{0}, '..ooo.B':{6},
-                     'x.ooo..':{0}, '..ooo.x':{6} #block-open-four
-                     }]
-
-        direction_x=[1,0,1,-1]
-        direction_y=[0,1,1,1]
-        flag=[False]
-
-        for point in range(0, len(self.board)):
-            if flag[0]:
+        for i in range(4):
+            p2 += d2
+            if self.board[p2] == struct[i]:
+                if second == None:
+                    second = p2
+                if i == 3:
+                    to_add = True
+            else:
                 break
-            for direction in range(0,4):
-                    self.check_pattern(point,'',direction_x[direction],direction_y[direction],moveSet,patternList,color,flag)
+
+        if to_add:
+            if self.board[(point + d1)] == EMPTY:
+                rt_list.append(second)
+
+        return rt_list
+
+    def _point_direction_check_win_win_two_gomoko(self, point, shift, color):
+        """
+        Check if the point has two_in_win condition in a direction
+        for the game of Gomoko.
+        """
+        color_count = 1
+        first_empty_count = 0
+        second_empty_count = 0
+        empty_flag = False
+        good_empty_point = None
+        first_good_empty_point = None
+        second_good_empty_point = None
+        color_continuous = True
+        d = shift
+        p = point
+
+        while True: # count color
+            p = p + d
+            if self.board[p] == color and color_continuous:
+                color_count = color_count + 1
+            elif self.board[p] == EMPTY:
+                color_continuous = False
+                first_empty_count += 1
+                if first_empty_count >= 2:
+                    break
+                elif first_empty_count == 1:
+                    first_good_empty_point = p
+            else:
+                break
+
+        if first_empty_count == 0:
+            return []
+        elif first_empty_count == 1:
+            first_good_empty_point = None
+
+        d = -d
+        p = point
+        color_continuous = False
+
+        while True: # count color
+            p = p + d
+            if self.board[p] == color and color_continuous:
+                color_count = color_count + 1
+            elif self.board[p] == EMPTY:
+                color_continuous = False
+                second_empty_count += 1
+                if second_empty_count >= 2:
+                    break
+                elif second_empty_count == 1:
+                    second_good_empty_point = p
+            else:
+                break
+
+        if second_empty_count == 0:
+            return []
+        elif second_empty_count == 1:
+            second_good_empty_point = None
+
+        # assert count <= 5
+        if (first_empty_count + second_empty_count) >= 3:
+            empty_flag = True
+
+        if color_count >= 3 and empty_flag:
+            if first_good_empty_point and second_good_empty_point:
+                return [first_good_empty_point, second_good_empty_point]
+            elif first_good_empty_point:
+                return [first_good_empty_point]
+            elif second_good_empty_point:
+                return [second_good_empty_point]
+        else:
+            return []
+
+
+
+
+    def check_win_in_two_for_a_node_my(self, point, color):
+        """
+            Check if the point causes the game end for the game of Gomoko.
+            """
+        # check horizontal
+        rtv = self._point_direction_check_win_win_two_gomoko_my(point, 1, color)
+        # print("1: ", rtv)
+        # check vertical
+        rtv += self._point_direction_check_win_win_two_gomoko_my(point, self.NS, color)
+        # print("self.NS: ", rtv)
+        # check y=x
+        rtv += self._point_direction_check_win_win_two_gomoko_my(point, self.NS + 1, color)
+        # print("self.NS + 1: ", rtv)
+        # check y=-x
+        rtv += self._point_direction_check_win_win_two_gomoko_my(point, self.NS - 1, color)
+        # print("self.NS - 1: ", rtv)
+        if len(rtv) > 0:
+            return rtv
+
+
+
+    def _point_direction_check_win_win_two_gomoko_my(self, point, shift, color):
+        """
+        Check if the point has two_in_win condition in a direction
+        for the game of Gomoko.
+        """
+        color_count = 1
+        first_empty_count = 0
+        second_empty_count = 0
+        empty_flag = False
+        good_empty_point = None
+        first_good_empty_point = None
+        second_good_empty_point = None
+        color_continuous = True
+        d = shift
+        p = point
+
+        while True: # count color
+            p = p + d
+            if self.board[p] == color and color_continuous:
+                color_count = color_count + 1
+            elif self.board[p] == EMPTY:
+                color_continuous = False
+                first_empty_count += 1
+                if first_empty_count >= 2:
+                    break
+                elif first_empty_count == 1:
+                    first_good_empty_point = p
+            else:
+                break
+
+        if first_empty_count == 0:
+            return []
+        elif first_empty_count == 1:
+            first_good_empty_point = None
+
+        d = -d
+        p = point
+        color_continuous = False
         
-        i=0
-        while i<4 and not bool(moveSet[i]): i+=1
-        if i==4:
-            return None
-        else:
-            return i, list(moveSet[i])
-            
-    def list_solve_point(self):
-        """
-        1. direct winning point xxxx. x.xxx xx.xx
-        2. urgent blocking point xoooo.
-        3. wining in 2 step point
-        """
-        moveSet=[set(),set(),set(),set()]
-        color=self.current_player
-
-        patternList=[{'xxxx.':{0},'xxx.x':{1},'xx.xx':{2},'x.xxx':{3},'.xxxx':{4}},{'oooo.':{0},'ooo.o':{1},'oo.oo':{2},'o.ooo':{3},'.oooo':{4}},{'.xxx..':{1},'..xxx.':{4},'.xx.x.':{2},'.x.xx.':{3}},{'.ooo..':{1,5},'..ooo.':{0,4},'.oo.o.':{2},'.o.oo.':{3}}]
-
-        direction_x=[1,0,1,-1]
-        direction_y=[0,1,1,1]
-        flag=[False]
-
-        for point in where1d(self.board!=BORDER):
-            if flag[0]:
+        while True: # count color
+            p = p + d
+            if self.board[p] == color and color_continuous:
+                color_count = color_count + 1
+            elif self.board[p] == EMPTY:
+                color_continuous = False
+                second_empty_count += 1
+                if second_empty_count >= 2:
+                    break
+                elif second_empty_count == 1:
+                    second_good_empty_point = p
+            else:
                 break
-            for direction in range(0,4):
-                    self.check_pattern(point,'',direction_x[direction],direction_y[direction],moveSet,patternList,color,flag)
-        
-        i=0
-        while i<4 and not bool(moveSet[i]):
-            i+=1
-        if i==4:
-            return None
+
+        if second_empty_count == 0:
+            return []
+        elif second_empty_count == 1:
+            second_good_empty_point = None
+
+        # assert count <= 5
+        if (first_empty_count + second_empty_count) >= 3:
+            empty_flag = True
+
+        if color_count >= 3 and empty_flag:
+            if first_good_empty_point and second_good_empty_point:
+                return [first_good_empty_point, second_good_empty_point]
+            elif first_good_empty_point:
+                return [first_good_empty_point,first_good_empty_point - d,first_good_empty_point + 4*d]
+            elif second_good_empty_point:
+                return [second_good_empty_point,second_good_empty_point + d,second_good_empty_point - 4*d]
         else:
-            return list(moveSet[i])
+            return []
+
+
+
+
+    def block_four_in_edge(self, point, color):
+        """
+            case : *XXX**
+            """
+        rtv = []
+        # # check horizontal
+        # rtv = self._point_direction_check_win_win_two_gomoko(point, 1, color)
+        # # print("1: ", rtv)
+        # # check vertical
+        # rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS, color)
+        # # print("self.NS: ", rtv)
+        # # check y=x
+        # rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS + 1, color)
+        # # print("self.NS + 1: ", rtv)
+        # # check y=-x
+        # rtv += self._point_direction_check_win_win_two_gomoko(point, self.NS - 1, color)
+        # print("self.NS - 1: ", rtv)
+        if len(rtv) > 0:
+            return rtv
+        else:
+            rtv = self._block_another_win_two_gomoko(point, 1, color)
+            # print("1: ", rtv)
+            # check vertical
+            rtv += self._block_another_win_two_gomoko(point, self.NS, color)
+            # print("self.NS: ", rtv)
+            # check y=x
+            rtv += self._block_another_win_two_gomoko(point, self.NS + 1, color)
+            # print("self.NS + 1: ", rtv)
+            # check y=-x
+            rtv += self._block_another_win_two_gomoko(point, self.NS - 1, color)
+            if len(rtv) > 0:
+                return rtv
+            else:
+                return None
+
+
+    def check_3_connect(self, point):
+        """
+            Check if the point has 3 points
+            """
+        # check horizontal
+        if self._point_direction_check_connect_gomoko_3(point, 1):
+            return True
+
+        # check vertical
+        if self._point_direction_check_connect_gomoko_3(point, self.NS):
+            return True
+
+        # check y=x
+        if self._point_direction_check_connect_gomoko_3(point, self.NS + 1):
+            return True
+
+        # check y=-x
+        if self._point_direction_check_connect_gomoko_3(point, self.NS - 1):
+            return True
+
+        return False
+
+
+
+
+
+
+    def _block_another_win_two_gomoko(self, point, shift, color):
+
+        """ *x*xx* """
+        rt_list_one = []
+        rt_list_two = []
+        rt_one = True
+        rt_two = True
+        struct = [EMPTY, color, color, EMPTY]
+        first = None
+        second = None
+        to_add = False
+
+        d1 = shift
+        p1 = point
+        d2 = -shift
+        p2 = point
+
+        for i in range(4):
+            p1 += d1
+            if self.board[p1] == struct[i]:
+                if struct[i] == EMPTY:
+                    rt_list_one.append(p1)
+            else:
+                rt_one = False
+                break
+        if rt_one:
+            if self.board[(point + d2)] == EMPTY:
+                rt_list_one.append(point + d2)
+            else:
+                rt_one = False
+
+
+        for i in range(4):
+            p2 += d2
+            if self.board[p2] == struct[i]:
+                if struct[i] == EMPTY:
+                    rt_list_two.append(p2)
+            else:
+                rt_two = False
+                break
+
+        if rt_two:
+            if self.board[(point + d1)] == EMPTY:
+                rt_list_two.append(point + d1)
+            else:
+                rt_two = False
+
+        if rt_one and rt_two:
+            return rt_list_one + rt_list_two
+        elif rt_one:
+            return rt_list_one
+        elif rt_two:
+            return rt_list_two
+        else:
+            return []

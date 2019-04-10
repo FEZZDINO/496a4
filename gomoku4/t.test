@@ -1,0 +1,48 @@
+clear_board
+play b A6
+play w B2
+play b A5
+play w A4
+play b B6
+play w C6
+play b B5
+play w C3
+play b B4
+play w C2
+
+D1
+B3
+D1
+F3
+D1
+A5
+D1
+B7
+D1
+E5
+D1
+E3
+D1
+G4
+D1
+D3
+D1
+C6
+D1
+C1
+D1
+B5
+D1
+F5
+F6
+E2
+D1
+D2
+G5
+G2
+D1
+B1
+Z2
+D4
+D5
+C3
